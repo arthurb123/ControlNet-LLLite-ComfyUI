@@ -3,13 +3,16 @@ import torch
 import os
 
 import comfy
+import folder_paths
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
-
-def get_file_list(path):
-    return [file for file in os.listdir(path) if file != "put_models_here.txt"]
-
+def get_file_list():
+    models = [file for file in folder_paths.get_filename_list("controlnet") if file != "put_models_here.txt" and 'kohya_controllllite' in file]
+    if len(models) == 0:
+        local_path = os.path.join(CURRENT_DIR, "models")
+        models = [file for file in os.listdir(local_path) if file != "put_models_here.txt"]
+    return models
 
 def extra_options_to_module_prefix(extra_options):
     # extra_options = {'transformer_index': 2, 'block_index': 8, 'original_shape': [2, 4, 128, 128], 'block': ('input', 7), 'n_heads': 20, 'dim_head': 64}
@@ -255,7 +258,7 @@ class LLLiteLoader:
         return {
             "required": {
                 "model": ("MODEL",),
-                "model_name": (get_file_list(os.path.join(CURRENT_DIR, "models")),),
+                "model_name": (get_file_list(),),
                 "cond_image": ("IMAGE",),
                 "strength": ("FLOAT", {"default": 1.0, "min": 0.0, "max": 10.0, "step": 0.01}),
                 "steps": ("INT", {"default": 0, "min": 0, "max": 200, "step": 1}),
@@ -271,8 +274,10 @@ class LLLiteLoader:
     def load_lllite(self, model, model_name, cond_image, strength, steps, start_percent, end_percent):
         # cond_image is b,h,w,3, 0-1
 
-        model_path = os.path.join(CURRENT_DIR, os.path.join(CURRENT_DIR, "models", model_name))
-
+        model_path = folder_paths.get_full_path("controlnet", model_name)
+        if not os.path.exists(model_path):
+            model_path = os.path.join(CURRENT_DIR, "models", model_name)
+            
         model_lllite = model.clone()
         patch = load_control_net_lllite_patch(model_path, cond_image, strength, steps, start_percent, end_percent)
         if patch is not None:
