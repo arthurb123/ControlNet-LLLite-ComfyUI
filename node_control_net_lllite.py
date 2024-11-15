@@ -1,4 +1,5 @@
 import math
+import sys
 import torch
 import os
 
@@ -7,8 +8,25 @@ import folder_paths
 
 CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
 
+comfy_path = os.environ.get('COMFYUI_PATH')
+if comfy_path is None:
+    print(f"\n[bold yellow]WARN: The `COMFYUI_PATH` environment variable is not set. Assuming `{os.path.dirname(__file__)}/../../` as the ComfyUI path.[/bold yellow]", file=sys.stderr)
+
+model_path = os.environ.get('COMFYUI_MODEL_PATH')
+if model_path is None:
+    try:
+        import folder_paths
+        model_path = folder_paths.models_dir
+    except:
+        pass
+
+    if model_path is None:
+        model_path = os.path.abspath(os.path.join(comfy_path, 'models'))
+    print(f"\n[bold yellow]WARN: The `COMFYUI_MODEL_PATH` environment variable is not set. Assuming `{model_path}` as the ComfyUI path.[/bold yellow]", file=sys.stderr)
+
 def get_file_list():
-    models = [file for file in folder_paths.get_filename_list("controlnet") if file != "put_models_here.txt" and 'kohya_controllllite' in file]
+    models = os.listdir(os.path.join(model_path, 'controlnet'))
+    models = [x for x in models if x != "put_controlnets_and_t2i_here"]
     if len(models) == 0:
         local_path = os.path.join(CURRENT_DIR, "models")
         models = [file for file in os.listdir(local_path) if file != "put_models_here.txt"]
